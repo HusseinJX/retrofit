@@ -29,7 +29,7 @@ body { font-family: 'Courier New', monospace; }
 #ldesc { font-size:13px; letter-spacing:2px; color:#00ffcc55; margin-top:7px; text-transform:uppercase; }
 #lnum  { font-size:12px; letter-spacing:3px; color:#00b4ff44; margin-top:5px; }
 
-#metrics { position:fixed; bottom:100px; left:34px; z-index:10; pointer-events:none; }
+#metrics { position:fixed; bottom:100px; left:34px; z-index:11; pointer-events:none; }
 .metric { display:flex; gap:12px; align-items:center; font-size:13px; letter-spacing:2px; color:#00b4ff55; margin:7px 0; text-transform:uppercase; }
 .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 .db  { background:#00b4ff; box-shadow:0 0 8px #00b4ff; animation:blink 2s ease infinite; }
@@ -44,20 +44,25 @@ body { font-family: 'Courier New', monospace; }
 .rv { color:#00b4ff88; }
 
 #story {
-  position:fixed; left:34px; top:110px; z-index:10; pointer-events:none;
-  max-width:420px; opacity:0; transition:opacity 0.7s ease;
+  position:fixed; left:0; top:0; bottom:0; z-index:10; pointer-events:none;
+  width:340px; opacity:0; transition:opacity 0.7s ease;
+  background:linear-gradient(90deg,rgba(4,10,22,0.96) 80%,rgba(4,10,22,0) 100%);
+  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  display:flex; flex-direction:column; justify-content:center;
+  padding:0 36px 0 34px;
+  border-right:1px solid rgba(0,180,255,0.08);
 }
 #story.vis { opacity:1; }
 #story-label {
-  font-size:12px; letter-spacing:3px; color:#00b4ff44; text-transform:uppercase;
-  padding-bottom:10px; border-bottom:1px solid #00b4ff22; margin-bottom:16px;
+  font-size:11px; letter-spacing:3px; color:#00b4ff44; text-transform:uppercase;
+  padding-bottom:10px; border-bottom:1px solid #00b4ff18; margin-bottom:18px;
 }
 #story-title {
-  font-size:24px; letter-spacing:3px; color:#00b4ffee; text-transform:uppercase;
-  font-weight:bold; margin-bottom:16px; text-shadow:0 0 24px #00b4ff55;
+  font-size:22px; letter-spacing:3px; color:#00b4ffee; text-transform:uppercase;
+  font-weight:bold; margin-bottom:18px; text-shadow:0 0 24px #00b4ff55; line-height:1.3;
 }
 #story-body {
-  font-size:15px; line-height:2; letter-spacing:0.3px; color:#00b4ffaa;
+  font-size:14px; line-height:2; letter-spacing:0.3px; color:#00b4ffaa;
 }
 
 #progress { position:fixed; top:0; left:0; height:2px; z-index:20; background:linear-gradient(90deg,transparent,#00b4ff,#00ffcc,transparent); width:20%; box-shadow:0 0 10px #00b4ff; transition:width 0.5s ease; }
@@ -666,13 +671,13 @@ function goTo(i){
   const toPos=LEVELS[i].camPos.clone();
   const dir=toPos.clone().sub(fromPos).normalize();
   const dist=fromPos.distanceTo(toPos);
-  camTP=toPos.clone().add(dir.multiplyScalar(dist*0.18)); // 18% overshoot
-  setTimeout(()=>{ camTP=toPos.clone(); },220);
+  camTP=toPos.clone().add(dir.multiplyScalar(dist*0.08)); // gentle 8% overshoot
+  setTimeout(()=>{ camTP=toPos.clone(); },400);
 
   camTL=LEVELS[i].camLook.clone();
   scene.fog.density=LEVELS[i].fog;
-  lerpSpeed=0.11; lerpDecay=true;
-  setTimeout(()=>{ lerpSpeed=0.04; lerpDecay=false; },1400);
+  lerpSpeed=0.055; lerpDecay=true;
+  setTimeout(()=>{ lerpSpeed=0.04; lerpDecay=false; },2200);
 
   const lv=LEVELS[i];
   document.getElementById('lname').textContent=lv.name;
@@ -697,7 +702,7 @@ window.addEventListener('wheel',(e)=>{
   if(next===cur)return;
   scrollLocked=true;
   goTo(next);
-  setTimeout(()=>scrollLocked=false,1300);
+  setTimeout(()=>scrollLocked=false,2000);
 },{passive:true});
 
 // Touch swipe
@@ -709,7 +714,7 @@ window.addEventListener('touchend',e=>{
   if(Math.abs(dy)<40)return;
   const next=Math.max(0,Math.min(LEVELS.length-1,cur+(dy>0?1:-1)));
   if(next===cur)return;
-  scrollLocked=true; goTo(next); setTimeout(()=>scrollLocked=false,1300);
+  scrollLocked=true; goTo(next); setTimeout(()=>scrollLocked=false,2000);
 },{passive:true});
 
 // ── ANIMATE ──────────────────────────────────
