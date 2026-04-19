@@ -8,7 +8,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #040c18; }
 body { font-family: 'Courier New', monospace; }
-#wrap { position: fixed; inset: 0; z-index: 1; }
+#wrap { position: fixed; left: 480px; right: 0; top: 0; bottom: 0; z-index: 1; }
 
 #scanline {
   position: fixed; inset: 0; z-index: 4; pointer-events: none;
@@ -132,7 +132,7 @@ body { font-family: 'Courier New', monospace; }
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
 <script>
 // ── RENDERER ──────────────────────────────────
-const W=window.innerWidth, H=window.innerHeight;
+const SIDEBAR=480, W=window.innerWidth-SIDEBAR, H=window.innerHeight;
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(W,H); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -760,7 +760,7 @@ function animate(){
 }
 animate();
 
-window.addEventListener('resize',()=>{const w=window.innerWidth,h=window.innerHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);});
+window.addEventListener('resize',()=>{const w=window.innerWidth-SIDEBAR,h=window.innerHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);});
 window.addEventListener('keydown',e=>{if(e.key>='1'&&e.key<='5')goTo(+e.key-1);if(e.key==='ArrowRight'||e.key===']')goTo(Math.min(4,cur+1));if(e.key==='ArrowLeft'||e.key==='[')goTo(Math.max(0,cur-1));});
 </script>
 </body>
