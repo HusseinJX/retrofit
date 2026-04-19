@@ -83,6 +83,23 @@ body { font-family: 'Courier New', monospace; }
 }
 .nbtn:hover { background:rgba(0,180,255,0.08); border-color:#00b4ff55; color:#00b4ffaa; }
 .nbtn.active { background:rgba(0,180,255,0.14); border-color:#00b4ffcc; color:#00b4ff; box-shadow:0 0 18px #00b4ff22; }
+
+#pills {
+  position:fixed; top:22px; left:50%; transform:translateX(-50%); z-index:10;
+  display:flex; gap:8px; flex-wrap:wrap; justify-content:center; pointer-events:none;
+  max-width:700px;
+}
+.pill {
+  padding:5px 13px; border-radius:20px; font-family:'Courier New',monospace;
+  font-size:10px; letter-spacing:2px; text-transform:uppercase; white-space:nowrap;
+  border:1px solid; backdrop-filter:blur(10px);
+}
+.pill-blue  { color:#00b4ffcc; border-color:#00b4ff33; background:rgba(0,180,255,0.07); }
+.pill-cyan  { color:#00ffcccc; border-color:#00ffcc33; background:rgba(0,255,204,0.07); }
+.pill-green { color:#39ff14cc; border-color:#39ff1433; background:rgba(57,255,20,0.07); }
+.pill-orange{ color:#ff6b35cc; border-color:#ff6b3533; background:rgba(255,107,53,0.07); }
+.pill-yellow{ color:#ffcc00cc; border-color:#ffcc0033; background:rgba(255,204,0,0.07); }
+.pill-purple{ color:#cc88ffcc; border-color:#cc88ff33; background:rgba(200,136,255,0.07); }
 </style>
 </head>
 <body>
@@ -95,6 +112,15 @@ body { font-family: 'Courier New', monospace; }
 <div class="corner" id="c-bl"></div><div class="corner" id="c-br"></div>
 
 <div id="brand"><h1>RETROFIT</h1><div class="sub">Industrial IoT · Edge-to-Network Intelligence Platform</div></div>
+
+<div id="pills">
+  <span class="pill pill-blue">⬡ Blockchain</span>
+  <span class="pill pill-cyan">◈ Smart Contracts</span>
+  <span class="pill pill-green">◎ AI</span>
+  <span class="pill pill-blue">▦ IoT</span>
+  <span class="pill pill-purple">✦ Quantum Optimization</span>
+  <span class="pill pill-orange">↻ Circular Economy</span>
+</div>
 
 <div id="story">
   <div id="story-label">◈ NODE INTELLIGENCE</div>
@@ -613,6 +639,47 @@ G4.add(new THREE.PointLight(0xffffff,8,3500,new THREE.Vector3(-2500,300,500)));
 G4.add(new THREE.PointLight(0xffffff,8,3500,new THREE.Vector3(2200,300,-800)));
 const ff4=mkFlow(600,0x00b4ff,8000,5,130); G4.add(ff4.pts); flows.push(ff4);
 
+// ── LOGISTICS / DELIVERY LAYER ───────────────
+// Logistics hub — port/distribution centre
+const logG=new THREE.Group(); logG.position.set(800,0,-1800); G4.add(logG);
+logG.add(box(280,30,180,cm(M.chassis,{color:0x2a5040}),0,15));
+logG.add(box(282,20,0.8,cm(M.panel,{color:0x1e4030}),0,14,90.5));
+logG.add(box(220,14,0.5,cm(M.cyan,{emissiveIntensity:1.6}),0,14,91));
+// dock bays
+for(let i=0;i<5;i++) logG.add(box(42,18,8,cm(M.chassis,{color:0x1e3a30}),-84+i*42,9,90));
+// cranes
+for(const cx of[-100,0,100]){
+  logG.add(cyl(3,3,80,8,M.steel,cx,55)); logG.add(box(90,4,4,M.steel,cx,95));
+  logG.add(cyl(1.5,1.5,30,6,cm(M.cyan,{emissiveIntensity:2}),cx,112));
+}
+logG.add(sph(14,16,cm(M.cyan,{emissiveIntensity:2.8}),0,130));
+G4.add(new THREE.PointLight(0x00ffcc,10,700,new THREE.Vector3(800,140,-1800)));
+
+// Moving delivery vehicles — boxes that travel along bezier curves between nodes
+const deliveryRoutes=[];
+const truckPairs=[[0,3],[1,5],[2,8],[6,9],[3,7],[4,1]];
+truckPairs.forEach(([a,b],ri)=>{
+  if(!facilNodes[a]||!facilNodes[b])return;
+  const p0=facilNodes[a].pos.clone(); p0.y=30;
+  const p1=facilNodes[b].pos.clone(); p1.y=30;
+  const mid=p0.clone().lerp(p1,0.5); mid.y=80;
+  const curve=new THREE.QuadraticBezierCurve3(p0,mid,p1);
+  // truck mesh
+  const tg=new THREE.Group(); G4.add(tg);
+  tg.add(box(28,16,50,cm(M.chassis,{color:0x2a4a60}),0,8,0));
+  tg.add(box(20,20,22,cm(M.chassis,{color:0x3a6080}),0,10,30));
+  tg.add(sph(4,8,cm(M.orange,{emissiveIntensity:3}),14,8,25));
+  tg.add(sph(4,8,cm(M.orange,{emissiveIntensity:3}),-14,8,25));
+  tg.add(box(22,4,46,cm(M.blue,{emissiveIntensity:1.4}),0,17,0));
+  const tl=new THREE.PointLight(0xff6b35,5,200); tg.add(tl);
+  deliveryRoutes.push({curve,mesh:tg,phase:(ri/truckPairs.length),speed:0.018+ri*0.003});
+});
+
+// Port/sea connection arc from logistics hub
+G4.add(arc(new THREE.Vector3(800,130,-1800),new THREE.Vector3(2400,30,-200),0x00ffcc,0.35));
+G4.add(arc(new THREE.Vector3(800,130,-1800),new THREE.Vector3(-2000,30,500),0x00ffcc,0.28));
+G4.add(arc(new THREE.Vector3(800,130,-1800),cmdPt,0x00ffcc,0.4));
+
 // ── LEVEL CONFIG ─────────────────────────────
 const LEVELS=[
   {
@@ -648,7 +715,7 @@ const LEVELS=[
     camPos:new THREE.Vector3(600,1900,3800),camLook:new THREE.Vector3(-200,0,0),fog:0.000038,group:G4,
     ms:'2,160',md:'12,960 / s',mn:'720',me:'97.8% ↑',ru:'99.99%',rl:'14 ms',rt:'2.8 GB/s',
     storyTitle:'ABUNDANCE THROUGH THE NETWORK',
-    storyBody:'Ten facilities. 2,160 sensors. One shared intelligence layer. At network scale, optimization unlocks something no single facility achieves alone: abundance. Spare capacity covers demand spikes across sites. Energy loads balance across geographies. Supply chain signals travel at machine speed. Every new node that joins makes the whole network smarter — the retrofit principle compounds. This is not incremental improvement. It is a new operating logic: the network generates more from less, site by site, until shared resources flow freely and scarcity becomes the exception.'
+    storyBody:'Ten facilities. 2,160 sensors. One logistics hub. At network scale, optimization unlocks something no single facility achieves alone: abundance. Delivery routes self-optimize in real time — trucks reroute around bottlenecks before they form, cargo loads balance across the grid, and supply chain signals travel at machine speed. Smart contracts settle transfers automatically. AI forecasts demand before it arrives. Every new node that joins makes the whole network smarter. The retrofit principle compounds until shared resources flow freely and scarcity becomes the exception.'
   }
 ];
 
@@ -741,6 +808,14 @@ function animate(){
   }
   // Hub pulse (L2)
   if(G2.visible&&hubLightRef) hubLightRef.intensity=10+Math.sin(t*1.4)*4;
+  // Delivery trucks (L4)
+  if(G4.visible) deliveryRoutes.forEach(dr=>{
+    dr.phase=(dr.phase+dr.speed*0.016)%1;
+    const pt=dr.curve.getPoint(dr.phase);
+    const pt2=dr.curve.getPoint((dr.phase+0.01)%1);
+    dr.mesh.position.copy(pt);
+    dr.mesh.lookAt(pt2);
+  });
   // Network beacons (L4)
   if(G4.visible) facilNodes.forEach((fn,i)=>{
     const p=(t*0.32+i*0.12)%1; fn.bpr.scale.setScalar(1+p*2.8); fn.bpr.material.opacity=(1-p)*0.42;
