@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RETROFIT — Industrial IoT Network</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #040c18; }
+body { font-family: 'Courier New', monospace; }
+#wrap { position: fixed; inset: 0; z-index: 1; }
+
+#scanline {
+  position: fixed; inset: 0; z-index: 4; pointer-events: none;
+  background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.03) 3px,rgba(0,0,0,0.03) 4px);
+}
+.corner { position: fixed; width: 26px; height: 26px; z-index: 10; pointer-events: none; border-color: #00b4ff33; border-style: solid; }
+#c-tl { top:18px; left:18px; border-width:1px 0 0 1px; }
+#c-tr { top:18px; right:18px; border-width:1px 1px 0 0; }
+#c-bl { bottom:72px; left:18px; border-width:0 0 1px 1px; }
+#c-br { bottom:72px; right:18px; border-width:0 1px 1px 0; }
+
+#brand { position: fixed; top:26px; left:34px; z-index:10; pointer-events:none; }
+#brand h1 { font-size:21px; font-weight:900; letter-spacing:9px; color:#00b4ff; text-transform:uppercase; text-shadow:0 0 24px #00b4ff66; }
+#brand .sub { font-size:8px; letter-spacing:3px; color:#00b4ff33; margin-top:5px; text-transform:uppercase; }
+
+#ldisp { position:fixed; top:26px; right:34px; z-index:10; pointer-events:none; text-align:right; }
+#lname { font-size:11px; letter-spacing:4px; font-weight:bold; color:#00ffcc; text-transform:uppercase; text-shadow:0 0 16px #00ffcc55; }
+#ldesc { font-size:8px; letter-spacing:2px; color:#00ffcc44; margin-top:5px; text-transform:uppercase; }
+#lnum  { font-size:8px; letter-spacing:2px; color:#00b4ff22; margin-top:3px; }
+
+#metrics { position:fixed; bottom:96px; left:34px; z-index:10; pointer-events:none; }
+.metric { display:flex; gap:10px; align-items:center; font-size:8px; letter-spacing:2px; color:#00b4ff44; margin:5px 0; text-transform:uppercase; }
+.dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.db  { background:#00b4ff; box-shadow:0 0 6px #00b4ff; animation:blink 2s ease infinite; }
+.dc  { background:#00ffcc; box-shadow:0 0 6px #00ffcc; animation:blink 2.4s ease infinite; }
+.do  { background:#ff6b35; box-shadow:0 0 6px #ff6b35; animation:blink 1.6s ease infinite; }
+.dg  { background:#39ff14; box-shadow:0 0 6px #39ff14; animation:blink 1.9s ease infinite; }
+.val { color:#00ffcc; font-weight:bold; min-width:90px; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.25} }
+
+#rpanel { position:fixed; right:34px; bottom:96px; z-index:10; pointer-events:none; text-align:right; }
+.rs { font-size:8px; letter-spacing:2px; color:#00b4ff33; margin:5px 0; text-transform:uppercase; }
+.rv { color:#00b4ff77; }
+
+#progress { position:fixed; top:0; left:0; height:1px; z-index:20; background:linear-gradient(90deg,transparent,#00b4ff,#00ffcc,transparent); width:20%; box-shadow:0 0 8px #00b4ff; transition:width 0.5s ease; }
+#overlay  { position:fixed; inset:0; z-index:30; pointer-events:none; opacity:0; background:radial-gradient(circle,#00b4ff06 0%,transparent 70%); transition:opacity 0.3s; }
+#overlay.flash { opacity:1; }
+
+#nav { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); display:flex; gap:4px; z-index:10; }
+.nbtn {
+  padding:8px 15px; background:rgba(4,12,24,0.9); border:1px solid #00b4ff15;
+  color:#00b4ff44; cursor:pointer; font-family:'Courier New',monospace;
+  font-size:8px; letter-spacing:2px; text-transform:uppercase;
+  transition:all 0.2s; backdrop-filter:blur(12px); outline:none; user-select:none; white-space:nowrap;
+}
+.nbtn:hover { background:rgba(0,180,255,0.07); border-color:#00b4ff44; color:#00b4ff99; }
+.nbtn.active { background:rgba(0,180,255,0.12); border-color:#00b4ffaa; color:#00b4ff; box-shadow:0 0 14px #00b4ff18; }
+</style>
+</head>
+<body>
+<div id="wrap"></div>
+<div id="scanline"></div>
+<div id="progress"></div>
+<div id="overlay"></div>
+<div class="corner" id="c-tl"></div><div class="corner" id="c-tr"></div>
+<div class="corner" id="c-bl"></div><div class="corner" id="c-br"></div>
+
+<div id="brand"><h1>RETROFIT</h1><div class="sub">Industrial IoT · Edge-to-Network Intelligence Platform</div></div>
+
+<div id="ldisp">
+  <div id="lname">Retrofit Device</div>
+  <div id="ldesc">Edge sensor · Real-time data capture</div>
+  <div id="lnum">LEVEL 01 / 05</div>
+</div>
+
+<div id="metrics">
+  <div class="metric"><div class="dot db"></div>SENSORS &nbsp;<span class="val" id="ms">1</span></div>
+  <div class="metric"><div class="dot dc"></div>DATA STREAMS &nbsp;<span class="val" id="md">4 / s</span></div>
+  <div class="metric"><div class="dot do"></div>NETWORK NODES &nbsp;<span class="val" id="mn">1</span></div>
+  <div class="metric"><div class="dot dg"></div>EFFICIENCY &nbsp;<span class="val" id="me">—</span></div>
+</div>
+<div id="rpanel">
+  <div class="rs">UPTIME &nbsp;<span class="rv" id="ru">99.9%</span></div>
+  <div class="rs">LATENCY &nbsp;<span class="rv" id="rl">2 ms</span></div>
+  <div class="rs">THROUGHPUT &nbsp;<span class="rv" id="rt">840 KB/s</span></div>
+  <div class="rs">PROTOCOL &nbsp;<span class="rv">MQTT · OPC-UA</span></div>
+</div>
+
+<div id="nav">
+  <button class="nbtn active" onclick="goTo(0)">◉ DEVICE</button>
+  <button class="nbtn" onclick="goTo(1)">◈ MACHINE</button>
+  <button class="nbtn" onclick="goTo(2)">▦ SHOP FLOOR</button>
+  <button class="nbtn" onclick="goTo(3)">⬡ FACILITY</button>
+  <button class="nbtn" onclick="goTo(4)">◎ NETWORK</button>
+</div>
+
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script>
+// ── RENDERER ──────────────────────────────────
+const W=window.innerWidth, H=window.innerHeight;
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(W,H); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.NoToneMapping; renderer.toneMappingExposure=1.0;
+document.getElementById('wrap').appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x040c18);
+scene.fog=new THREE.FogExp2(0x040c18, 0.004);
+
+const camera=new THREE.PerspectiveCamera(52,W/H,0.01,20000);
+
+// ── GLOBAL LIGHTS (shared across all levels) ──
+// Strong white ambient — Lambert materials show full color on all faces
+scene.add(new THREE.AmbientLight(0xffffff, 2.2));
+// Multi-angle directionals so no face is ever in full darkness
+function dlight(col,intensity,x,y,z){const l=new THREE.DirectionalLight(col,intensity);l.position.set(x,y,z);scene.add(l);}
+dlight(0xaaccff,1.6, 20, 40, 20);   // key — top front right
+dlight(0x88aacc,1.2,-20, 30, 10);   // fill — top left
+dlight(0x6688bb,0.9,  0,-20, 10);   // under — bottom fill
+dlight(0x8899bb,0.8,  0, 10,-20);   // back
+dlight(0x7799bb,0.7, 20, 10,-10);   // side
+
+// ── MATERIALS ────────────────────────────────
+// MeshLambertMaterial: responds to ambient fully — no specular darkening, all faces lit
+const L=(col)=>new THREE.MeshLambertMaterial({color:col});
+const E=(col,em,ei)=>new THREE.MeshStandardMaterial({color:col,emissive:new THREE.Color(em),emissiveIntensity:ei,roughness:0.85,metalness:0});
+const M={
+  chassis: L(0x3d5e7a),
+  panel:   L(0x2e4d6a),
+  steel:   L(0x5e82a0),
+  floor:   L(0x08101e),
+  concrete:L(0x253d54),
+  blue:    E(0x003366,0x00b4ff,3.0),
+  cyan:    E(0x003333,0x00ffcc,2.8),
+  orange:  E(0x3a1200,0xff6b35,3.0),
+  green:   E(0x003300,0x39ff14,2.6),
+  yellow:  E(0x332800,0xffcc00,3.0),
+};
+// cm: clone + override — works for both Lambert and Standard
+function cm(base,ov={}){
+  const m=base.clone();
+  if(ov.color!==undefined) m.color.set(ov.color);
+  if(ov.emissiveIntensity!==undefined&&m.emissiveIntensity!==undefined) m.emissiveIntensity=ov.emissiveIntensity;
+  if(ov.emissive!==undefined&&m.emissive!==undefined) m.emissive.set(ov.emissive);
+  if(ov.transparent!==undefined){m.transparent=ov.transparent;}
+  if(ov.opacity!==undefined){m.opacity=ov.opacity;}
+  if(ov.metalness!==undefined&&m.metalness!==undefined) m.metalness=ov.metalness;
+  return m;
+}
+
+// ── GEOMETRY HELPERS ─────────────────────────
+function box(w,h,d,mat,x=0,y=0,z=0){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; return m;
+}
+function cyl(rt,rb,h,seg,mat,x=0,y=0,z=0){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);
+  m.position.set(x,y,z); m.castShadow=true; return m;
+}
+function sph(r,seg,mat,x=0,y=0,z=0){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(r,seg,seg),mat);
+  m.position.set(x,y,z); return m;
+}
+function tor(r,tube,seg,rseg,mat){return new THREE.Mesh(new THREE.TorusGeometry(r,tube,seg,rseg),mat);}
+function mkGrid(size,divs,col,op=0.35){
+  const g=new THREE.GridHelper(size,divs,new THREE.Color(col),new THREE.Color(col));
+  g.material.opacity=op; g.material.transparent=true; return g;
+}
+function gline(pts,col,op=0.7){
+  const g=new THREE.BufferGeometry().setFromPoints(pts);
+  const m=new THREE.LineBasicMaterial({color:new THREE.Color(col),transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false});
+  return new THREE.Line(g,m);
+}
+function arc(p0,p1,col,op=0.5){
+  const d=p0.distanceTo(p1);
+  const mid=new THREE.Vector3((p0.x+p1.x)/2,Math.max(p0.y,p1.y)+d*0.38,(p0.z+p1.z)/2);
+  return gline(new THREE.QuadraticBezierCurve3(p0,mid,p1).getPoints(50),col,op);
+}
+function wireBox(w,h,d,col,op=0.4){
+  const geo=new THREE.EdgesGeometry(new THREE.BoxGeometry(w,h,d));
+  const mat=new THREE.LineBasicMaterial({color:new THREE.Color(col),transparent:true,opacity:op,blending:THREE.AdditiveBlending});
+  return new THREE.LineSegments(geo,mat);
+}
+function mkFlow(n,col,spread,yMin,yMax){
+  const geo=new THREE.BufferGeometry();
+  const pos=new Float32Array(n*3), spd=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    pos[i*3]=(Math.random()-.5)*spread; pos[i*3+1]=yMin+Math.random()*(yMax-yMin); pos[i*3+2]=(Math.random()-.5)*spread;
+    spd[i]=0.15+Math.random()*0.3;
+  }
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const pts=new THREE.Points(geo,new THREE.PointsMaterial({
+    color:new THREE.Color(col),size:0.12,transparent:true,opacity:0.8,
+    blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true
+  }));
+  return {pts,spd,geo,yMin,yMax,spread};
+}
+
+// ── ANIMATED REFS ────────────────────────────
+const flows=[], wRings=[], facilNodes=[];
+let ledRingRef, devLightRef, hubLightRef, t=0;
+
+// ── STARFIELD ────────────────────────────────
+{
+  const sp=new Float32Array(3000*3);
+  for(let i=0;i<3000;i++){sp[i*3]=(Math.random()-.5)*12000;sp[i*3+1]=(Math.random()-.5)*6000;sp[i*3+2]=(Math.random()-.5)*12000;}
+  const sg=new THREE.BufferGeometry(); sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+  scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x2255aa,size:2.5,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false})));
+}
+
+// ════════════════════════════════════════════
+//  LEVEL 0 — RETROFIT DEVICE
+// ════════════════════════════════════════════
+const G0=new THREE.Group(); scene.add(G0);
+
+// Horizontal pipe
+const pipeMat=cm(M.steel,{color:0x5a7e9a});
+const pipe=cyl(0.55,0.55,6,28,pipeMat,0,0.45);
+pipe.rotation.z=Math.PI/2; G0.add(pipe);
+for(const px of[-2.2,2.2]){const f=cyl(0.68,0.68,0.18,24,cm(M.steel,{color:0x4a6880}),px,0.45);f.rotation.z=Math.PI/2;G0.add(f);}
+
+// Sensor body sitting on pipe
+const sG=new THREE.Group(); sG.position.set(0,1.5,0); G0.add(sG);
+sG.add(cyl(0.65,0.7,1.7,32,M.chassis,0,0.35));
+sG.add(cyl(0.68,0.65,0.1,32,M.steel,0,1.2));
+sG.add(cyl(0.7,0.67,0.12,32,M.panel,0,-0.49));
+for(let i=0;i<5;i++){const r=tor(0.66,0.022,8,32,M.steel);r.rotation.x=Math.PI/2;r.position.y=-0.28+i*0.32;sG.add(r);}
+
+// Glowing LED ring
+const lrMat=cm(M.blue,{emissiveIntensity:3.0});
+const lRing=tor(0.6,0.048,16,64,lrMat); lRing.rotation.x=Math.PI/2; lRing.position.y=0.92; sG.add(lRing); ledRingRef=lRing;
+for(let i=0;i<16;i++){const a=(i/16)*Math.PI*2;sG.add(sph(0.05,8,[M.cyan,M.blue,M.green,M.blue][i%4],Math.cos(a)*0.6,0.92,Math.sin(a)*0.6));}
+
+// Display panel
+const dg=new THREE.Group(); dg.position.set(0.66,0.28,0); dg.rotation.y=Math.PI/2; sG.add(dg);
+dg.add(box(0.55,0.35,0.02,cm(M.chassis,{color:0x081828})));
+dg.add(box(0.44,0.25,0.01,cm(M.blue,{emissiveIntensity:2})));
+for(let i=0;i<4;i++) dg.add(box(0.35,0.018,0.005,cm(M.cyan,{emissiveIntensity:1.5}),0,-0.08+i*0.055,0.006));
+
+// Antenna
+const ant=cyl(0.018,0.026,0.9,8,M.steel,0.38,1.55); ant.rotation.z=0.22; sG.add(ant);
+sG.add(sph(0.048,8,M.cyan,0.38+Math.sin(0.22)*0.45,1.55+Math.cos(0.22)*0.45,0));
+
+// Clamp arms
+for(const s of[-1,1]){
+  sG.add(box(0.28,0.28,0.6,M.steel,s*0.72,-0.38,0));
+  const b=cyl(0.042,0.042,0.18,8,M.steel,s*0.88,-0.38); b.rotation.z=Math.PI/2; sG.add(b);
+  sG.add(sph(0.06,8,M.steel,s*0.97,-0.38,0));
+}
+sG.add(box(1.45,0.1,0.65,M.panel,0,-0.55,0));
+sG.add(cyl(0.1,0.12,0.2,12,M.panel,-0.3,-0.62,0.28));
+sG.add(cyl(0.07,0.07,0.12,8,cm(M.blue,{emissiveIntensity:2},-0.3,-0.62,0.32)));
+
+// Wireless rings
+for(let i=0;i<5;i++){
+  const rm=tor(1,0.022,8,64,new THREE.MeshBasicMaterial({color:0x00b4ff,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}));
+  rm.rotation.x=Math.PI/2; rm.position.y=2.4; G0.add(rm); wRings.push({mesh:rm,phase:i/5});
+}
+
+// Particles + lights
+const df=mkFlow(80,0x00b4ff,0.5,2.5,7); G0.add(df.pts); flows.push(df);
+devLightRef=new THREE.PointLight(0x00b4ff,8,15); devLightRef.position.set(0,2.2,0); G0.add(devLightRef);
+G0.add(new THREE.PointLight(0x00ffcc,4,10,new THREE.Vector3(0,1.5,0)));
+G0.add(new THREE.PointLight(0xffffff,5,18,new THREE.Vector3(4,5,4)));
+G0.add(new THREE.PointLight(0xffffff,5,18,new THREE.Vector3(-4,4,-4)));
+
+// Floor
+const g0=mkGrid(22,22,0x0055cc,0.55); g0.position.y=-0.79; G0.add(g0);
+
+// ── SENSOR TEMPLATE ─────────────────────────
+function mkSensor(scale=1,col=0x00b4ff){
+  const g=new THREE.Group();
+  const eM=cm(M.blue,{emissive:new THREE.Color(col),emissiveIntensity:2.8});
+  g.add(cyl(0.42*scale,0.46*scale,1.1*scale,24,M.chassis,0,0.25*scale));
+  g.add(cyl(0.46*scale,0.42*scale,0.1*scale,24,M.steel,0,0.82*scale));
+  g.add(cyl(0.46*scale,0.43*scale,0.1*scale,24,M.panel,0,-0.3*scale));
+  const lr2=tor(0.38*scale,0.03*scale,12,48,eM); lr2.rotation.x=Math.PI/2; lr2.position.y=0.55*scale; g.add(lr2);
+  for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2; g.add(sph(0.04*scale,8,eM,Math.cos(a)*0.38*scale,0.55*scale,Math.sin(a)*0.38*scale));}
+  g.add(cyl(0.016*scale,0.022*scale,0.6*scale,8,M.steel,0.28*scale,0.88*scale));
+  g.add(sph(0.038*scale,8,eM,0.28*scale,0.88*scale+0.32*scale));
+  return g;
+}
+
+// ════════════════════════════════════════════
+//  LEVEL 1 — MACHINE
+// ════════════════════════════════════════════
+const G1=new THREE.Group(); scene.add(G1); G1.visible=false;
+
+function mkMachine(colA=0x00b4ff,colB=0x00ffcc,colC=0xff6b35){
+  const g=new THREE.Group();
+  g.add(box(8,0.6,6,cm(M.steel,{color:0x2a4060}),0,0.3));
+  g.add(box(6.5,10,5,M.chassis,0,5.3));
+  g.add(box(6.52,8,0.18,M.panel,0,4.8,2.59));
+  // Display
+  g.add(box(3.2,2.0,0.07,cm(M.blue,{emissive:new THREE.Color(colA),emissiveIntensity:2.2}),0,7.3,2.67));
+  for(let i=0;i<5;i++) g.add(box(2.5,0.07,0.04,cm(M.cyan,{emissive:new THREE.Color(colA),emissiveIntensity:1.5}),0,6.4+i*0.22,2.7));
+  // Status LEDs
+  [[colA],[colB],[colC],[0x39ff14]].forEach(([c],i)=>{
+    const lm=cm(M.blue,{emissive:new THREE.Color(c),emissiveIntensity:3});
+    g.add(sph(0.13,8,lm,-1.8+i*0.45,5.8,2.69));
+    const pl=new THREE.PointLight(new THREE.Color(c),1.5,3); pl.position.set(-1.8+i*0.45,5.8,2.7); g.add(pl);
+  });
+  for(let i=0;i<6;i++) g.add(box(4.8,0.06,0.04,cm(M.steel,{color:0x2a4a60}),0,3.0+i*0.28,2.66));
+  g.add(box(5.2,0.12,0.04,cm(M.blue,{emissive:new THREE.Color(colA),emissiveIntensity:1.2}),0,8.8,2.66));
+  // Top head
+  g.add(box(4,2.5,3,cm(M.chassis,{color:0x1a2e44}),0,11.2));
+  g.add(cyl(0.6,0.6,3.8,20,M.steel,0,11.5));
+  g.add(cyl(0.4,0.4,1.5,16,cm(M.blue,{emissive:new THREE.Color(colA),emissiveIntensity:2.5}),0,13.5));
+  g.add(sph(0.3,16,cm(M.cyan,{emissive:new THREE.Color(colA),emissiveIntensity:3.5}),0,14.5));
+  const spl=new THREE.PointLight(new THREE.Color(colA),4,10); spl.position.set(0,14.5,0); g.add(spl);
+  for(const sx of[-3.5,3.5]) for(const sz of[-2.2,2.2]) g.add(box(0.28,10.5,0.28,M.steel,sx,5.2,sz));
+  // Side accents
+  g.add(box(0.2,10,0.55,cm(M.steel,{color:0x3a5878}),-3.9,5.2,0));
+  g.add(box(2.2,1.5,0.9,cm(M.chassis,{color:0x1a2e44}),2.6,1.5,2.2));
+
+  // Retrofit sensors — 3 positions
+  const sPos=[
+    {x:3.55,y:4,z:0,ry:-Math.PI/2,col:colA},
+    {x:0,y:9.5,z:2.7,ry:0,col:colB},
+    {x:-3.55,y:6,z:0,ry:Math.PI/2,col:colC},
+  ];
+  sPos.forEach(sp=>{
+    const s=mkSensor(0.85,sp.col); s.position.set(sp.x,sp.y,sp.z); s.rotation.y=sp.ry; g.add(s);
+    const pl=new THREE.PointLight(new THREE.Color(sp.col),3,7); pl.position.set(sp.x,sp.y,sp.z); g.add(pl);
+    const fs=mkFlow(40,sp.col,0.28,sp.y,16); fs.pts.position.set(sp.x,0,sp.z); g.add(fs.pts); flows.push(fs);
+  });
+  return g;
+}
+G1.add(mkMachine(0x00b4ff,0x00ffcc,0xff6b35));
+G1.add(box(65,0.1,44,M.floor,0,-0.08));
+const g1gr=mkGrid(65,32,0x00b4ff,0.35); g1gr.position.y=0.02; G1.add(g1gr);
+// Open environment — floor marks only, no dark walls
+G1.add(new THREE.PointLight(0x88ccff,10,80,new THREE.Vector3(0,18,0)));
+G1.add(new THREE.PointLight(0xffffff,6,55,new THREE.Vector3(-10,12,0)));
+G1.add(new THREE.PointLight(0xffffff,6,55,new THREE.Vector3(10,12,0)));
+G1.add(new THREE.PointLight(0xffffff,4,45,new THREE.Vector3(0,12,12)));
+// Faint ceiling lines to imply space
+for(const cx of[-25,0,25]){
+  G1.add(gline([new THREE.Vector3(cx,22,-20),new THREE.Vector3(cx,22,20)],0x00b4ff,0.06));
+}
+
+// ════════════════════════════════════════════
+//  LEVEL 2 — SHOP FLOOR  (NO CEILING, NO SOLID WALLS)
+// ════════════════════════════════════════════
+const G2=new THREE.Group(); scene.add(G2); G2.visible=false;
+
+// Floor
+G2.add(box(260,0.2,200,M.floor,0,-0.12));
+const g2gr=mkGrid(260,52,0x0055cc,0.55); g2gr.position.y=0.01; G2.add(g2gr);
+
+// Structural columns (visible posts, no walls)
+for(const cx of[-110,-55,0,55,110]) for(const cz of[-85,85]){
+  G2.add(cyl(1.2,1.2,32,10,M.steel,cx,16,cz));
+  // Overhead truss line
+  G2.add(gline([new THREE.Vector3(cx,32,cz),new THREE.Vector3(cx+55,32,cz)],0x2255aa,0.15));
+}
+// Cross beams
+for(const cx of[-110,-55,0,55]) G2.add(box(55,0.4,0.4,cm(M.steel,{color:0x2a4060}),cx+27.5,32,0));
+for(const cz of[-85,85]) G2.add(box(260,0.4,0.4,cm(M.steel,{color:0x2a4060}),0,32,cz));
+
+// Pendant lights (hanging, no ceiling slab)
+const pendantPositions=[];
+for(let i=0;i<4;i++) for(let j=0;j<3;j++){
+  const px=-82+i*55, pz=-50+j*50;
+  pendantPositions.push([px,pz]);
+  G2.add(cyl(0.3,0.4,0.5,12,M.steel,px,30,pz));
+  G2.add(sph(0.55,12,cm(M.blue,{emissiveIntensity:3}),px,29.4,pz));
+  G2.add(gline([new THREE.Vector3(px,32,pz),new THREE.Vector3(px,30.7,pz)],0x2255aa,0.2));
+  G2.add(new THREE.PointLight(0x99ccff,8,75,new THREE.Vector3(px,29,pz)));
+}
+
+// 4×4 machine grid
+const shopPos=[];
+const mcols=[0x00b4ff,0x00ffcc,0xff6b35,0xffcc00];
+for(let r=0;r<4;r++) for(let c=0;c<4;c++){
+  const mx=-82+c*55, mz=-60+r*40;
+  shopPos.push({x:mx,z:mz});
+  const col=mcols[(r*4+c)%4];
+  const mg=new THREE.Group(); mg.position.set(mx,0,mz);
+  mg.add(box(7,0.5,6,cm(M.steel,{color:0x2a4060}),0,0.25));
+  mg.add(box(5.8,9.5,5,M.chassis,0,5.08));
+  mg.add(box(5.82,7,0.16,M.panel,0,4.6,2.58));
+  mg.add(box(2.8,1.5,0.07,cm(M.blue,{emissive:new THREE.Color(col),emissiveIntensity:2}),0,6.7,2.65));
+  for(let i=0;i<4;i++) mg.add(box(2.2,0.07,0.04,cm(M.cyan,{emissive:new THREE.Color(col),emissiveIntensity:1.4}),0,5.9+i*0.2,2.68));
+  mg.add(cyl(0.5,0.5,2.5,14,M.steel,0,11.5));
+  mg.add(sph(0.28,14,cm(M.blue,{emissive:new THREE.Color(col),emissiveIntensity:3}),0,13.0));
+  // Two retrofit sensors per machine
+  for(const [sx,sy,ry] of[[3.1,3.5,-Math.PI/2],[-3.1,6,Math.PI/2]]){
+    const s=mkSensor(0.68,col); s.position.set(sx,sy,0); s.rotation.y=ry; mg.add(s);
+    mg.add(new THREE.PointLight(new THREE.Color(col),2.5,8,new THREE.Vector3(sx,sy,0)));
+  }
+  const fs=mkFlow(30,col,0.3,2,13); fs.pts.position.set(mx,0,mz); G2.add(fs.pts); flows.push(fs);
+  G2.add(mg);
+}
+
+// Central gateway hub
+const hG=new THREE.Group(); G2.add(hG);
+hG.add(box(9,0.5,9,cm(M.steel,{color:0x2a4a60}),0,0.25));
+hG.add(box(7.5,5,7.5,M.chassis,0,2.75));
+hG.add(box(7.52,3.5,0.16,M.panel,0,2.5,3.76));
+hG.add(box(5.5,2.5,0.09,cm(M.blue,{emissiveIntensity:2.2}),0,2.5,3.82));
+hG.add(cyl(0.45,0.6,4.5,12,M.steel,0,7.75));
+hG.add(cyl(1.0,1.0,0.22,12,M.blue,0,10.1));
+hG.add(sph(0.55,18,M.cyan,0,10.5));
+hubLightRef=new THREE.PointLight(0x00ffcc,12,80); hubLightRef.position.set(0,11,0); G2.add(hubLightRef);
+
+// Network lines floor→hub
+shopPos.forEach(p=>G2.add(gline([new THREE.Vector3(0,0.2,0),new THREE.Vector3(p.x,0.2,p.z)],0x00b4ff,0.22)));
+
+// Zone colour overlays
+const zCols=[0x00b4ff,0x00ffcc,0xff6b35,0xffcc00];
+[[-82,-30],[82,-30],[-82,30],[82,30]].forEach(([x,z],i)=>{
+  const f=new THREE.Mesh(new THREE.PlaneGeometry(100,65),new THREE.MeshBasicMaterial({color:new THREE.Color(zCols[i]),transparent:true,opacity:0.04,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));
+  f.rotation.x=-Math.PI/2; f.position.set(x,0.15,z); G2.add(f);
+  const wb=wireBox(100,28,65,zCols[i],0.22); wb.position.set(x,14,z); G2.add(wb);
+  G2.add(new THREE.PointLight(new THREE.Color(zCols[i]),3,80,new THREE.Vector3(x,20,z)));
+});
+// Floor ambient
+G2.add(new THREE.PointLight(0x88aaff,8,200,new THREE.Vector3(0,35,0)));
+const ff2=mkFlow(200,0x00b4ff,200,1,8); G2.add(ff2.pts); flows.push(ff2);
+
+// ════════════════════════════════════════════
+//  LEVEL 3 — FACILITY  (WIREFRAME BUILDING, OPEN VIEW)
+// ════════════════════════════════════════════
+const G3=new THREE.Group(); scene.add(G3); G3.visible=false;
+
+const BW=600,BD=400,BH=65;
+G3.add(box(900,0.5,740,cm(M.floor,{color:0x0e1e32}),0,-0.3));
+const g3gr=mkGrid(900,90,0x0044aa,0.5); g3gr.position.y=0.02; G3.add(g3gr);
+
+// Building wireframe ONLY — no solid walls blocking view
+const bwire=wireBox(BW,BH,BD,0x00b4ff,0.55); bwire.position.set(0,BH/2,0); G3.add(bwire);
+
+// Roof frame structure (cross beams visible as lines)
+for(let i=0;i<5;i++){
+  const bx=-BW/2+i*(BW/4);
+  G3.add(gline([new THREE.Vector3(bx,BH,-BD/2),new THREE.Vector3(bx,BH,BD/2)],0x00b4ff,0.12));
+}
+for(let j=0;j<3;j++){
+  const bz=-BD/2+j*(BD/2);
+  G3.add(gline([new THREE.Vector3(-BW/2,BH,bz),new THREE.Vector3(BW/2,BH,bz)],0x00b4ff,0.08));
+}
+
+// Floor zones
+const zones3=[
+  {x:-170,z:-90,w:220,d:170,col:0x00b4ff},
+  {x:90, z:-90,w:220,d:170,col:0x00ffcc},
+  {x:-170,z:90,w:220,d:170,col:0xff6b35},
+  {x:90, z:90,w:220,d:170,col:0xffcc00},
+];
+zones3.forEach(z=>{
+  G3.add(box(z.w,0.3,z.d,cm(M.floor,{color:0x0c1c30}),z.x,0.15,z.z));
+  const wb2=wireBox(z.w,38,z.d,z.col,0.35); wb2.position.set(z.x,19,z.z); G3.add(wb2);
+  const zfl=new THREE.Mesh(new THREE.PlaneGeometry(z.w,z.d),new THREE.MeshBasicMaterial({color:new THREE.Color(z.col),transparent:true,opacity:0.04,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));
+  zfl.rotation.x=-Math.PI/2; zfl.position.set(z.x,0.16,z.z); G3.add(zfl);
+  // Machines in zone
+  for(let r=0;r<2;r++) for(let c=0;c<3;c++){
+    const mm=new THREE.Group();
+    mm.position.set(z.x-z.w*0.32+c*(z.w*0.32),0,z.z-z.d*0.28+r*(z.d*0.28));
+    mm.add(box(12,17,9,M.chassis));
+    mm.add(box(12.2,12,0.3,M.panel,0,0,4.65));
+    mm.add(box(8.5,7.5,0.2,cm(M.blue,{emissive:new THREE.Color(z.col),emissiveIntensity:1.8}),0,2,4.7));
+    mm.add(cyl(1.2,1.2,6,12,M.steel,0,11.5));
+    mm.add(sph(1.7,14,cm(M.blue,{emissive:new THREE.Color(z.col),emissiveIntensity:2.8}),0,15.8));
+    // Retrofit sensor
+    const s3=mkSensor(1.0,z.col); s3.position.set(7.2,7,0); s3.rotation.y=-Math.PI/2; mm.add(s3);
+    mm.add(new THREE.PointLight(new THREE.Color(z.col),3,20,new THREE.Vector3(7.2,7,0)));
+    G3.add(mm);
+  }
+  G3.add(new THREE.PointLight(new THREE.Color(z.col),10,250,new THREE.Vector3(z.x,45,z.z)));
+});
+
+// MES control tower (left side)
+const fhG=new THREE.Group(); fhG.position.set(-260,0,0); G3.add(fhG);
+fhG.add(box(50,40,36,M.chassis,0,20));
+fhG.add(box(50.5,28,0.5,M.panel,0,18,18.3));
+fhG.add(box(38,18,0.3,cm(M.blue,{emissiveIntensity:2}),0,18,18.6));
+for(let i=0;i<3;i++){fhG.add(cyl(1.2,2,95,10,M.steel,-12+i*12,67.5));fhG.add(sph(5,16,M.cyan,-12+i*12,117));}
+G3.add(new THREE.PointLight(0x00ffcc,12,350,new THREE.Vector3(-260,125,0)));
+
+// External arcs
+[[-440,30,-280],[440,30,-300],[-360,30,280],[360,30,290]].forEach(([tx,ty,tz])=>{
+  G3.add(arc(new THREE.Vector3(-260,115,0),new THREE.Vector3(tx,ty,tz),0x00b4ff,0.45));
+});
+// Interior fill lights
+G3.add(new THREE.PointLight(0x88ccff,15,550,new THREE.Vector3(0,60,0)));
+G3.add(new THREE.PointLight(0xffffff,9,380,new THREE.Vector3(180,50,0)));
+G3.add(new THREE.PointLight(0xffffff,9,380,new THREE.Vector3(-180,50,0)));
+G3.add(new THREE.PointLight(0x88aaff,7,300,new THREE.Vector3(0,50,160)));
+G3.add(new THREE.PointLight(0x88aaff,7,300,new THREE.Vector3(0,50,-160)));
+
+// Loading dock & office outlines (wireframe only)
+const dock=wireBox(180,18,36,0x2244aa,0.3); dock.position.set(350,9,0); G3.add(dock);
+const office=wireBox(80,28,55,0x224466,0.3); office.position.set(-350,14,0); G3.add(office);
+
+const ff3=mkFlow(350,0x00b4ff,500,2,38); G3.add(ff3.pts); flows.push(ff3);
+
+// ════════════════════════════════════════════
+//  LEVEL 4 — NETWORK GRID
+// ════════════════════════════════════════════
+const G4=new THREE.Group(); scene.add(G4); G4.visible=false;
+
+G4.add(box(6500,0.5,5000,M.floor,0,-1));
+const g4a=mkGrid(6500,80,0x0055cc,0.55); G4.add(g4a);
+const g4b=mkGrid(6500,32,0x0055cc,0.35); g4b.position.y=0.5; G4.add(g4b);
+
+const plants=[
+  {x:-2000,z:-1200,col:0x00b4ff, sc:1.3},
+  {x:-500, z:-1400,col:0x00ffcc, sc:1.0},
+  {x:1200, z:-900, col:0x00b4ff, sc:1.5},
+  {x:2400, z:-200, col:0xff6b35, sc:0.9},
+  {x:1800, z:1200, col:0x00ffcc, sc:1.1},
+  {x:300,  z:1500, col:0xffcc00, sc:1.0},
+  {x:-1300,z:1100, col:0x00b4ff, sc:1.4},
+  {x:-2600,z:500,  col:0x39ff14, sc:1.0},
+  {x:900,  z:400,  col:0x00ffcc, sc:0.85},
+  {x:-1600,z:-200, col:0xff6b35, sc:0.9},
+];
+
+plants.forEach((fp,i)=>{
+  const fg=new THREE.Group(); fg.position.set(fp.x,0,fp.z);
+  const s=fp.sc;
+  // Hexagonal ground pad
+  fg.add(new THREE.Mesh(new THREE.CylinderGeometry(90*s,100*s,10,6),cm(M.chassis,{color:0x1e3a52})));
+  const pr=tor(95*s,4,8,6,new THREE.MeshBasicMaterial({color:new THREE.Color(fp.col),transparent:true,opacity:0.65,blending:THREE.AdditiveBlending}));
+  pr.rotation.x=Math.PI/2; pr.position.y=5; fg.add(pr);
+  // Factory building — lighter material, visible
+  fg.add(box(115*s,52,90*s,cm(M.chassis,{color:0x3a6080}),0,31));
+  fg.add(box(116*s,38,0.8,cm(M.panel,{color:0x2e5070}),0,29,45.5*s));
+  fg.add(box(92*s,24,0.5,cm(M.blue,{emissive:new THREE.Color(fp.col),emissiveIntensity:1.2}),0,29,46*s));
+  fg.add(box(116*s,2,90*s,cm(M.steel,{color:0x3a6080}),0,57.5));
+  // Antenna
+  fg.add(cyl(2,3.5,115,10,M.steel,0,80));
+  fg.add(sph(9,18,cm(M.blue,{emissive:new THREE.Color(fp.col),emissiveIntensity:3.5}),0,142));
+  // Pulse ring
+  const bpr=tor(14*s,1.8,8,32,new THREE.MeshBasicMaterial({color:new THREE.Color(fp.col),transparent:true,opacity:0.55,blending:THREE.AdditiveBlending,depthWrite:false}));
+  bpr.rotation.x=Math.PI/2; bpr.position.y=10; fg.add(bpr);
+  // Lights
+  const bL=new THREE.PointLight(new THREE.Color(fp.col),14,900); bL.position.set(0,150,0); fg.add(bL);
+  fg.add(new THREE.PointLight(new THREE.Color(fp.col),8,350,new THREE.Vector3(0,30,0)));
+  fg.add(new THREE.PointLight(0xffffff,10,300,new THREE.Vector3(0,40,0)));
+  // Ground heatmap ring
+  const hr=new THREE.Mesh(new THREE.RingGeometry(100*s,115*s,32),new THREE.MeshBasicMaterial({color:new THREE.Color(fp.col),transparent:true,opacity:0.12,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));
+  hr.rotation.x=-Math.PI/2; hr.position.y=0.5; fg.add(hr);
+  const hc=new THREE.Mesh(new THREE.CircleGeometry(90*s,32),new THREE.MeshBasicMaterial({color:new THREE.Color(fp.col),transparent:true,opacity:0.025,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));
+  hc.rotation.x=-Math.PI/2; hc.position.y=0.4; fg.add(hc);
+  G4.add(fg);
+  facilNodes.push({pos:new THREE.Vector3(fp.x,148,fp.z),fg,col:fp.col,bpr,bL});
+});
+
+// Command center
+const cmdG=new THREE.Group(); cmdG.position.set(-400,0,200); G4.add(cmdG);
+cmdG.add(box(270,80,210,cm(M.chassis,{color:0x3a6080}),0,40));
+cmdG.add(box(271,55,0.8,cm(M.panel,{color:0x2e5070}),0,38,105.5));
+cmdG.add(box(220,38,0.5,cm(M.blue,{emissiveIntensity:2}),0,38,106));
+for(let i=0;i<5;i++){const ax=-80+i*40;cmdG.add(cyl(1.5,2.5,165,10,M.steel,ax,112.5));cmdG.add(sph(10,16,M.cyan,ax,197));}
+cmdG.add(new THREE.Mesh(new THREE.CylinderGeometry(32,42,10,6),cm(M.chassis,{color:0x3a6080}),0,5));
+G4.add(new THREE.PointLight(0x00ffcc,18,1000,new THREE.Vector3(-400,210,200)));
+G4.add(new THREE.PointLight(0xffffff,8,600,new THREE.Vector3(-400,100,200)));
+
+// Connections
+const cmdPt=new THREE.Vector3(-400,145,200);
+facilNodes.forEach((fn,i)=>{
+  G4.add(arc(cmdPt,fn.pos,fn.col,0.55));
+  if(i<facilNodes.length-1) G4.add(arc(fn.pos,facilNodes[(i+3)%facilNodes.length].pos,fn.col,0.28));
+});
+[[0,4],[1,6],[2,7],[3,5],[4,8],[5,9]].forEach(([a,b])=>{
+  if(facilNodes[a]&&facilNodes[b]) G4.add(arc(facilNodes[a].pos,facilNodes[b].pos,facilNodes[a].col,0.2));
+});
+// Wide-coverage fill lights across the whole network
+G4.add(new THREE.PointLight(0xffffff,12,6000,new THREE.Vector3(0,500,0)));
+G4.add(new THREE.PointLight(0xaaccff,10,4000,new THREE.Vector3(1500,400,0)));
+G4.add(new THREE.PointLight(0xaaccff,10,4000,new THREE.Vector3(-1500,400,0)));
+G4.add(new THREE.PointLight(0xaaccff,10,4000,new THREE.Vector3(0,400,1500)));
+G4.add(new THREE.PointLight(0xaaccff,10,4000,new THREE.Vector3(0,400,-1500)));
+G4.add(new THREE.PointLight(0xffffff,8,3500,new THREE.Vector3(-2500,300,500)));
+G4.add(new THREE.PointLight(0xffffff,8,3500,new THREE.Vector3(2200,300,-800)));
+const ff4=mkFlow(600,0x00b4ff,8000,5,130); G4.add(ff4.pts); flows.push(ff4);
+
+// ── LEVEL CONFIG ─────────────────────────────
+const LEVELS=[
+  {
+    name:'RETROFIT DEVICE',    desc:'Edge sensor unit · Real-time data capture',     num:'LEVEL 01 / 05',
+    camPos:new THREE.Vector3(4,5,12),      camLook:new THREE.Vector3(0,1.8,0),  fog:0.005,  group:G0,
+    ms:'1',md:'4 / s',mn:'1',me:'—',ru:'99.9%',rl:'2 ms',rt:'840 KB/s'
+  },
+  {
+    name:'MACHINE INTEGRATION',desc:'3 retrofit sensors · 6 data channels · Live',  num:'LEVEL 02 / 05',
+    camPos:new THREE.Vector3(10,14,35),    camLook:new THREE.Vector3(0,5,0),    fog:0.0015, group:G1,
+    ms:'3',md:'18 / s',mn:'1',me:'—',ru:'99.9%',rl:'3 ms',rt:'2.4 MB/s'
+  },
+  {
+    name:'SHOP FLOOR',         desc:'Zone A–D · 16 machines · Gateway active',      num:'LEVEL 03 / 05',
+    camPos:new THREE.Vector3(55,155,165),  camLook:new THREE.Vector3(0,3,0),    fog:0.0005, group:G2,
+    ms:'48',md:'288 / s',mn:'16',me:'Active',ru:'99.8%',rl:'5 ms',rt:'38 MB/s'
+  },
+  {
+    name:'FACILITY',           desc:'Plant 7 · 4 zones · 72 machines · MES link',  num:'LEVEL 04 / 05',
+    camPos:new THREE.Vector3(250,370,820), camLook:new THREE.Vector3(-20,25,0), fog:0.00018,group:G3,
+    ms:'216',md:'1,296 / s',mn:'72',me:'94.2% ↑',ru:'99.7%',rl:'8 ms',rt:'280 MB/s'
+  },
+  {
+    name:'NETWORK GRID',       desc:'10 facilities · Global intelligence · Multi-site opt.',num:'LEVEL 05 / 05',
+    camPos:new THREE.Vector3(600,1900,3800),camLook:new THREE.Vector3(-200,0,0),fog:0.000038,group:G4,
+    ms:'2,160',md:'12,960 / s',mn:'720',me:'97.8% ↑',ru:'99.99%',rl:'14 ms',rt:'2.8 GB/s'
+  }
+];
+
+// ── NAVIGATION ───────────────────────────────
+let cur=0, camTP=LEVELS[0].camPos.clone(), camTL=LEVELS[0].camLook.clone(), camCL=LEVELS[0].camLook.clone();
+camera.position.copy(LEVELS[0].camPos); scene.fog.density=LEVELS[0].fog;
+
+function goTo(i){
+  if(i===cur)return;
+  LEVELS[cur].group.visible=false; cur=i; LEVELS[i].group.visible=true;
+  camTP=LEVELS[i].camPos.clone(); camTL=LEVELS[i].camLook.clone();
+  scene.fog.density=LEVELS[i].fog;
+  const lv=LEVELS[i];
+  document.getElementById('lname').textContent=lv.name;
+  document.getElementById('ldesc').textContent=lv.desc;
+  document.getElementById('lnum').textContent=lv.num;
+  ['ms','md','mn','me','ru','rl','rt'].forEach(k=>document.getElementById(k).textContent=lv[k]);
+  document.querySelectorAll('.nbtn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  document.getElementById('progress').style.width=(20+i*20)+'%';
+  const ov=document.getElementById('overlay'); ov.classList.add('flash'); setTimeout(()=>ov.classList.remove('flash'),300);
+}
+
+// ── ANIMATE ──────────────────────────────────
+function animate(){
+  requestAnimationFrame(animate); t+=0.016;
+  // Smooth camera
+  camera.position.lerp(camTP,0.04); camCL.lerp(camTL,0.04); camera.lookAt(camCL);
+  // Gentle orbit
+  const bp=LEVELS[cur].camPos;
+  camTP.lerp(new THREE.Vector3(bp.x+Math.sin(t*0.06)*bp.z*0.05,bp.y+Math.sin(t*0.04)*bp.y*0.02,bp.z+Math.cos(t*0.07)*bp.z*0.04),0.005);
+
+  // Wireless rings (L0)
+  if(G0.visible){
+    wRings.forEach(w=>{const p=(t*0.4+w.phase)%1;w.mesh.scale.setScalar(1+p*3);w.mesh.material.opacity=(1-p)*0.45;});
+    if(ledRingRef) ledRingRef.material.emissiveIntensity=2.5+Math.sin(t*2.8)*1.0;
+    if(devLightRef) devLightRef.intensity=7+Math.sin(t*1.8)*2.5;
+  }
+  // Hub pulse (L2)
+  if(G2.visible&&hubLightRef) hubLightRef.intensity=10+Math.sin(t*1.4)*4;
+  // Network beacons (L4)
+  if(G4.visible) facilNodes.forEach((fn,i)=>{
+    const p=(t*0.32+i*0.12)%1; fn.bpr.scale.setScalar(1+p*2.8); fn.bpr.material.opacity=(1-p)*0.42;
+    fn.bL.intensity=9+Math.sin(t*1.0+i*0.9)*3;
+  });
+
+  // Flow particles
+  flows.forEach(fs=>{
+    const pa=fs.geo.attributes.position.array,cnt=pa.length/3;
+    for(let i=0;i<cnt;i++){
+      pa[i*3+1]+=fs.spd[i]*0.18;
+      if(pa[i*3+1]>fs.yMax){pa[i*3+1]=fs.yMin;pa[i*3]=(Math.random()-.5)*fs.spread;pa[i*3+2]=(Math.random()-.5)*fs.spread;}
+    }
+    fs.geo.attributes.position.needsUpdate=true;
+  });
+  renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener('resize',()=>{const w=window.innerWidth,h=window.innerHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);});
+window.addEventListener('keydown',e=>{if(e.key>='1'&&e.key<='5')goTo(+e.key-1);if(e.key==='ArrowRight'||e.key===']')goTo(Math.min(4,cur+1));if(e.key==='ArrowLeft'||e.key==='[')goTo(Math.max(0,cur-1));});
+</script>
+</body>
+</html>
