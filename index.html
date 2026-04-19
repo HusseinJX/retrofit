@@ -43,6 +43,23 @@ body { font-family: 'Courier New', monospace; }
 .rs { font-size:8px; letter-spacing:2px; color:#00b4ff33; margin:5px 0; text-transform:uppercase; }
 .rv { color:#00b4ff77; }
 
+#story {
+  position:fixed; left:34px; top:82px; z-index:10; pointer-events:none;
+  max-width:248px; opacity:0; transition:opacity 0.7s ease;
+}
+#story.vis { opacity:1; }
+#story-label {
+  font-size:7px; letter-spacing:3px; color:#00b4ff44; text-transform:uppercase;
+  padding-bottom:7px; border-bottom:1px solid #00b4ff18; margin-bottom:10px;
+}
+#story-title {
+  font-size:9px; letter-spacing:3px; color:#00b4ffcc; text-transform:uppercase;
+  font-weight:bold; margin-bottom:9px; text-shadow:0 0 12px #00b4ff44;
+}
+#story-body {
+  font-size:7.5px; line-height:1.9; letter-spacing:0.4px; color:#00b4ff66;
+}
+
 #progress { position:fixed; top:0; left:0; height:1px; z-index:20; background:linear-gradient(90deg,transparent,#00b4ff,#00ffcc,transparent); width:20%; box-shadow:0 0 8px #00b4ff; transition:width 0.5s ease; }
 #overlay  { position:fixed; inset:0; z-index:30; pointer-events:none; opacity:0; background:radial-gradient(circle,#00b4ff06 0%,transparent 70%); transition:opacity 0.3s; }
 #overlay.flash { opacity:1; }
@@ -67,6 +84,12 @@ body { font-family: 'Courier New', monospace; }
 <div class="corner" id="c-bl"></div><div class="corner" id="c-br"></div>
 
 <div id="brand"><h1>RETROFIT</h1><div class="sub">Industrial IoT · Edge-to-Network Intelligence Platform</div></div>
+
+<div id="story">
+  <div id="story-label">◈ NODE INTELLIGENCE</div>
+  <div id="story-title"></div>
+  <div id="story-body"></div>
+</div>
 
 <div id="ldisp">
   <div id="lname">Retrofit Device</div>
@@ -584,33 +607,53 @@ const LEVELS=[
   {
     name:'RETROFIT DEVICE',    desc:'Edge sensor unit · Real-time data capture',     num:'LEVEL 01 / 05',
     camPos:new THREE.Vector3(4,5,12),      camLook:new THREE.Vector3(0,1.8,0),  fog:0.005,  group:G0,
-    ms:'1',md:'4 / s',mn:'1',me:'—',ru:'99.9%',rl:'2 ms',rt:'840 KB/s'
+    ms:'1',md:'4 / s',mn:'1',me:'—',ru:'99.9%',rl:'2 ms',rt:'840 KB/s',
+    storyTitle:'THE SEED NODE',
+    storyBody:'Every network begins with a single act of awareness. A retrofit sensor clips onto any existing asset — pipe, motor, valve — and captures what was always there but never measured. Pressure. Temperature. Vibration. Flow. The invisible becomes data. This node asks nothing of the machine it monitors. It is additive, non-invasive, modular. One device. One stream. The first seed in what becomes a self-optimizing network.'
   },
   {
     name:'MACHINE INTEGRATION',desc:'3 retrofit sensors · 6 data channels · Live',  num:'LEVEL 02 / 05',
     camPos:new THREE.Vector3(10,14,35),    camLook:new THREE.Vector3(0,5,0),    fog:0.0015, group:G1,
-    ms:'3',md:'18 / s',mn:'1',me:'—',ru:'99.9%',rl:'3 ms',rt:'2.4 MB/s'
+    ms:'3',md:'18 / s',mn:'1',me:'—',ru:'99.9%',rl:'3 ms',rt:'2.4 MB/s',
+    storyTitle:'THE CONNECTED ASSET',
+    storyBody:'Three sensors. Six live channels. Enough to map the full behavioral signature of any machine — heat curves, load cycles, wear patterns — before they become failures. The asset is no longer passive infrastructure. It is a participant. Because retrofit hardware is modular, any machine joins the network without OEM intervention, without downtime, without replacement. Intelligence layers onto what already exists, and each newly connected node raises the resolution of the whole.'
   },
   {
     name:'SHOP FLOOR',         desc:'Zone A–D · 16 machines · Gateway active',      num:'LEVEL 03 / 05',
     camPos:new THREE.Vector3(55,155,165),  camLook:new THREE.Vector3(0,3,0),    fog:0.0005, group:G2,
-    ms:'48',md:'288 / s',mn:'16',me:'Active',ru:'99.8%',rl:'5 ms',rt:'38 MB/s'
+    ms:'48',md:'288 / s',mn:'16',me:'Active',ru:'99.8%',rl:'5 ms',rt:'38 MB/s',
+    storyTitle:'COLLABORATIVE OPTIMIZATION',
+    storyBody:'Sixteen machines. Four zones. One gateway. When every asset shares its state, coordination becomes possible. Zone throughput adjusts in real time because a bottleneck was flagged upstream. The gateway resolves conflicts between nodes and surfaces patterns no single machine could see alone. This is the first emergence of network-level intelligence — local optimization giving way to collective optimization. Efficiency rises not because one machine improved, but because they all began to collaborate.'
   },
   {
     name:'FACILITY',           desc:'Plant 7 · 4 zones · 72 machines · MES link',  num:'LEVEL 04 / 05',
     camPos:new THREE.Vector3(250,370,820), camLook:new THREE.Vector3(-20,25,0), fog:0.00018,group:G3,
-    ms:'216',md:'1,296 / s',mn:'72',me:'94.2% ↑',ru:'99.7%',rl:'8 ms',rt:'280 MB/s'
+    ms:'216',md:'1,296 / s',mn:'72',me:'94.2% ↑',ru:'99.7%',rl:'8 ms',rt:'280 MB/s',
+    storyTitle:'THE ADAPTIVE SYSTEM',
+    storyBody:'At facility scale, retrofit becomes architecture. Seventy-two machines across four zones feed a live MES layer holding a real-time model of the entire plant. Resources — energy, materials, throughput — flow where they are needed, guided by live node signals rather than fixed schedules. Modular zones can be reconfigured or specialized without disrupting the whole. Innovation slots in at the zone level. The facility becomes a living, adaptive system that continuously compounds its own efficiency.'
   },
   {
     name:'NETWORK GRID',       desc:'10 facilities · Global intelligence · Multi-site opt.',num:'LEVEL 05 / 05',
     camPos:new THREE.Vector3(600,1900,3800),camLook:new THREE.Vector3(-200,0,0),fog:0.000038,group:G4,
-    ms:'2,160',md:'12,960 / s',mn:'720',me:'97.8% ↑',ru:'99.99%',rl:'14 ms',rt:'2.8 GB/s'
+    ms:'2,160',md:'12,960 / s',mn:'720',me:'97.8% ↑',ru:'99.99%',rl:'14 ms',rt:'2.8 GB/s',
+    storyTitle:'ABUNDANCE THROUGH THE NETWORK',
+    storyBody:'Ten facilities. 2,160 sensors. One shared intelligence layer. At network scale, optimization unlocks something no single facility achieves alone: abundance. Spare capacity covers demand spikes across sites. Energy loads balance across geographies. Supply chain signals travel at machine speed. Every new node that joins makes the whole network smarter — the retrofit principle compounds. This is not incremental improvement. It is a new operating logic: the network generates more from less, site by site, until shared resources flow freely and scarcity becomes the exception.'
   }
 ];
 
 // ── NAVIGATION ───────────────────────────────
 let cur=0, camTP=LEVELS[0].camPos.clone(), camTL=LEVELS[0].camLook.clone(), camCL=LEVELS[0].camLook.clone();
 camera.position.copy(LEVELS[0].camPos); scene.fog.density=LEVELS[0].fog;
+
+function setStory(lv){
+  const el=document.getElementById('story');
+  el.classList.remove('vis');
+  setTimeout(()=>{
+    document.getElementById('story-title').textContent=lv.storyTitle;
+    document.getElementById('story-body').textContent=lv.storyBody;
+    el.classList.add('vis');
+  },200);
+}
 
 function goTo(i){
   if(i===cur)return;
@@ -625,7 +668,11 @@ function goTo(i){
   document.querySelectorAll('.nbtn').forEach((b,j)=>b.classList.toggle('active',j===i));
   document.getElementById('progress').style.width=(20+i*20)+'%';
   const ov=document.getElementById('overlay'); ov.classList.add('flash'); setTimeout(()=>ov.classList.remove('flash'),300);
+  setStory(lv);
 }
+
+// Init story for level 0
+setTimeout(()=>setStory(LEVELS[0]),600);
 
 // ── ANIMATE ──────────────────────────────────
 function animate(){
